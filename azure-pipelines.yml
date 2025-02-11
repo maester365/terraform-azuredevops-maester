@@ -1,0 +1,47 @@
+# Maester Daily Tests
+
+trigger:
+  - main
+
+schedules:
+  - cron: "0 0 * * *"
+    displayName: Daily midnight build
+    branches:
+      include:
+        - main
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+  - task: AzurePowerShell@5
+    displayName: "Run Maester"
+    inputs:
+      azureSubscription: "sc-maester-wif"
+      pwsh: true
+      azurePowerShellVersion: LatestVersion
+      ScriptType: InlineScript
+      Inline: |
+        # Connect to Microsoft Graph
+        $accessToken = (Get-AzAccessToken -ResourceTypeName MSGraph).Token | ConvertTo-SecureString -AsPlainText -Force
+        Connect-MgGraph $accessToken
+
+        # Install Maester
+        Install-Module Maester -Force
+
+        # Configure test results
+        $PesterConfiguration = New-PesterConfiguration
+        $PesterConfiguration.TestResult.Enabled = $true
+        $PesterConfiguration.TestResult.OutputPath = '$(System.DefaultWorkingDirectory)/test-results/test-results.xml'
+
+        # Run Maester tests
+        Invoke-Maester -Path $(System.DefaultWorkingDirectory)/tests/Maester/ -PesterConfiguration $PesterConfiguration -OutputFolder '$(System.DefaultWorkingDirectory)/test-results'
+  - publish: $(System.DefaultWorkingDirectory)/test-results
+    displayName: Publish Maester Html Report
+    artifact: TestResults
+  - task: PublishTestResults@2
+    displayName: Publish Pester Test Results
+    inputs:
+      testResultsFormat: "NUnit"
+      testResultsFiles: "**/test-results.xml"
+      failTaskOnFailedTests: true
