@@ -4,7 +4,7 @@ This Terraform Module will help you through setting up Maester in Azure DevOps a
 
 ## Permissions
 Ensure you have Global Administrator and permissions within Azure DevOps.
-- You can temporary use an PAT to deploy the resources.
+- You can temporary use a PAT to deploy the resources.
 
 ## Requirements
 
