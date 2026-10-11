@@ -23,8 +23,12 @@ steps:
       ScriptType: InlineScript
       Inline: |
         # Connect to Microsoft Graph
-        $accessToken = (Get-AzAccessToken -ResourceTypeName MSGraph).Token | ConvertTo-SecureString -AsPlainText -Force
-        Connect-MgGraph $accessToken
+        # Get-AzAccessToken with -AsSecureString returns a SecureString in all Az.Accounts
+        # versions (2.x through 5.x+), avoiding the breaking change in 5.x where .Token
+        # itself became a SecureString. Connect-MgGraph requires -AccessToken as a named
+        # parameter (Graph SDK 2.x+).
+        $tokenObj = Get-AzAccessToken -ResourceTypeName MSGraph -AsSecureString
+        Connect-MgGraph -AccessToken $tokenObj.Token
 
         # Install Maester
         Install-Module Maester -Force
